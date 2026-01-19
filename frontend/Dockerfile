@@ -6,11 +6,14 @@ WORKDIR /app
 # Copy package files
 COPY package.json ./
 
-# Install dependencies (using npm install instead of npm ci)
+# Install dependencies
 RUN npm install
 
 # Copy source files
 COPY . .
+
+# Create public directory if it doesn't exist
+RUN mkdir -p public
 
 # Build the application
 RUN npm run build
@@ -26,8 +29,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy built assets
-COPY --from=builder /app/public ./public
+# Create public directory
+RUN mkdir -p public
+
+# Copy public folder if it exists (use || true to not fail if empty)
+COPY --from=builder /app/public ./public 2>/dev/null || true
+
+# Copy standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
